@@ -14,3 +14,6 @@ invert_data_raw <- read.csv("https://paleobiodb.org/data1.2/occs/list.txt?base_n
 #cleans raw data file
 fish_data_cleaned <- single.stage(fish_data_raw)
 invert_data_cleaned <- single.stage(invert_data_raw)
+
+#creates test variable
+test <- 0
