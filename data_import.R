@@ -53,4 +53,6 @@ for(x in c(122, 121, 120, 119, 118, 117, 116, 115, 114, 113)) {
   nBt <- length(unique(intersect(occurrences_before, occurrences_after)))
   nBl <- length(unique(intersect(occurrences_before, occurrences_current)))
   nB <- nBt + nBl
+  
+  likelihood <- nBt * log(nBt / nB) + nBl * log(nBl / nB)
 }
