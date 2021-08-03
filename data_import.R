@@ -42,9 +42,9 @@ for(x in c(122, 121, 120, 119, 118, 117, 116, 115, 114, 113)) {
   occurrences_current <- unique(fish_data_sorted[fish_data_sorted$interval_no == x,]$genus)
   occurrences_after <- unique(fish_data_sorted[fish_data_sorted$interval_no == x - 1,]$genus)
   for(col in 1:ncol(occurrence_intervals)) {
-    if (x + 1 >= occurrence_intervals[1, col] & x + 1 <= occurrence_intervals[2, col]) append(occurrences_before, col, after = 1)
-    if (x >= occurrence_intervals[1, col] & x <= occurrence_intervals[2, col]) append(occurrences_current, col, after = 1)
-    if (x - 1 >= occurrence_intervals[1, col] & x - 1 <= occurrence_intervals[2, col]) append(occurrences_after, col, after = 1)
+    if (x + 1 <= occurrence_intervals[1, col] & x + 1 >= occurrence_intervals[2, col]) occurrences_before <- append(occurrences_before, colnames(occurrence_intervals)[col], after = length(occurrences_before))
+    if (x <= occurrence_intervals[1, col] & x >= occurrence_intervals[2, col]) occurrences_current <- append(occurrences_current, colnames(occurrence_intervals)[col], after = length(occurrences_current))
+    if (x - 1 <= occurrence_intervals[1, col] & x - 1 >= occurrence_intervals[2, col]) occurrences_after <- append(occurrences_after, colnames(occurrence_intervals)[col], after = length(occurrences_after))
   }
   occurrences_before <- unique(occurrences_before)
   occurrences_current <- unique(occurrences_current)
