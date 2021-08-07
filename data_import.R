@@ -3,6 +3,8 @@
 #selects collections that are assigned to a single geological time interval
 #load dplyr package
 library(dplyr)
+library(ggplot2)
+
 source("https://raw.githubusercontent.com/mclapham/PBDB-R-scripts/master/single_stage.R")
 
 #read fish data from PBDB
@@ -24,7 +26,6 @@ interval_order <- read.csv("https://paleobiodb.org/data1.2/intervals/list.txt?sc
 fish_data_age <- left_join(fish_data_cleaned, interval_order, by = c("max_stage" = "interval_name"))
 invert_data_age <- left_join(invert_data_cleaned, interval_order, by = c("max_stage" = "interval_name"))
 
-
 fish_data_sorted <- arrange(fish_data_age, desc(interval_no))
 invert_data_sorted <- arrange(invert_data_age, desc(interval_no))
 
@@ -40,7 +41,7 @@ for (row in 1:nrow(fish_data_sorted)) {
 }
 
 #calculating nBt, nBl, nB for each set of intervals using interval_orders
-counter <- 0
+counter <- 1
 fish_nB <- numeric(0)
 fish_nBt <- numeric(0)
 fish_nBl <- numeric(0)
@@ -81,7 +82,7 @@ for (row in 1:nrow(invert_data_sorted)) {
 }
 
 #calculating nBt, nBl, nB for each set of intervals using interval_orders
-counter <- 0
+counter <- 1
 invert_nB <- numeric(0)
 invert_nBt <- numeric(0)
 invert_likelihoods <- numeric(0)
@@ -114,10 +115,10 @@ for(x in c(122, 121, 120, 119, 118, 117, 116, 115, 114, 113)) {
 }
 #CODE FOR AIC CALCULATIONS
 
-#Small sample-corrected Akaike Information Criterion calculation
+#Small sample-corrected Akaike Information Criterion calculation - value adjusted for complexity of particular model
 aicc <- function(ml,K,n) {	-2 * ml + 2 * K + (2 * K * (K + 1)) / (n - K - 1) }
 
-#Akaike weights calculation
+#Akaike weights calculation - converts value to 0 - 1 scale
 aicw <- function(x) { exp(-0.5 * x) / sum(exp(-0.5 * x)) }
 
 #need the vector of likelihoods calculated from the summed counts
@@ -129,7 +130,27 @@ onerate_aic <- aicc(both_likelihood, 1, fish_nB + invert_nB)
 tworate_aic <- aicc(fish_likelihoods + invert_likelihoods, 2, fish_nB + invert_nB)
 
 #Akaike weights
-apply(data.frame(onerate_aic, tworate_aic), 1, aicw)
+akaike_weight <- apply(data.frame(onerate_aic, tworate_aic), 1, aicw)['tworate_aic', ]
 
 fish_extinction_rate <- -log(fish_nBt / fish_nB)
 invert_extinction_rate <- -log(invert_nBt / invert_nB)
+
+extinction <- data.frame(rate = c(fish_extinction_rate, invert_extinction_rate), 
+                         time = rev(rep(interval_order$min_ma[2 : (nrow(interval_order) - 1)], 2)), 
+                         type = rep(c('fish', 'invert'), each = 10),
+                         weight = akaike_weight)
+interval_order$midpoint <- rowMeans(subset(interval_order, select = c(min_ma, max_ma)))
+
+ggplot(extinction) +
+  geom_vline(xintercept = 93.9) +
+  geom_rect(data = interval_order, aes(xmin = max_ma, xmax = min_ma, ymin = -0.2, ymax = -0.1),
+            color="black", fill = interval_order$color) +
+  geom_text(data = interval_order, aes(x = midpoint, y = -0.15, label = strtrim(interval_name, 2))) +
+  geom_line(data = extinction, aes(x = time, y = rate, group = type)) +
+  geom_point(data = filter(extinction, type == "fish"), aes(x = time, y = rate, fill = weight), shape=21, size=3) +
+  scale_x_reverse() +
+  scale_fill_gradient2(low = "#5e3c99", mid = "white", high = "#e66101") +
+  xlab("Age (Ma)") + ylab("Extinction rate") +
+  theme_classic() +
+  theme(axis.text = element_text(size=16),
+        axis.title = element_text(size=17))
