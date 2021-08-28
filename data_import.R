@@ -79,6 +79,7 @@ for (row in 1:nrow(invert_data_sorted)) {
     occurrence_intervals[1, current_genus] <- invert_data_sorted[row, 'interval_no']
     occurrence_intervals[2, current_genus] <- invert_data_sorted[row, 'interval_no'] #to eliminate empty end interval values in the case of single occurrences
   } else occurrence_intervals[2, current_genus] <- invert_data_sorted[row, 'interval_no']
+
 }
 
 #calculating nBt, nBl, nB for each set of intervals using interval_orders
@@ -91,6 +92,7 @@ for(x in c(122, 121, 120, 119, 118, 117, 116, 115, 114, 113)) {
   occurrences_before <- unique(invert_data_sorted[invert_data_sorted$interval_no == x + 1,]$genus)
   occurrences_current <- unique(invert_data_sorted[invert_data_sorted$interval_no == x,]$genus)
   occurrences_after <- unique(invert_data_sorted[invert_data_sorted$interval_no == x - 1,]$genus)
+   
   for(col in 1:ncol(occurrence_intervals)) {
     if (x + 1 <= occurrence_intervals[1, col] & x + 1 >= occurrence_intervals[2, col]) occurrences_before <- append(occurrences_before, colnames(occurrence_intervals)[col], after = length(occurrences_before))
     if (x <= occurrence_intervals[1, col] & x >= occurrence_intervals[2, col]) occurrences_current <- append(occurrences_current, colnames(occurrence_intervals)[col], after = length(occurrences_current))
@@ -107,7 +109,6 @@ for(x in c(122, 121, 120, 119, 118, 117, 116, 115, 114, 113)) {
   invert_nB[counter] <- nB
   invert_nBt[counter] <- nBt
 
-  
   invert_likelihoods[counter] <- nBt * log(nBt / nB) + nBl * log(nBl / nB)
   both_likelihood[counter] <- (nBt + fish_nBt[counter]) * log((nBt + fish_nBt[counter]) / (nB + fish_nB[counter])) + (nBl + fish_nBl[counter]) * log((nBl + fish_nBl[counter]) / ((nB + fish_nB[counter]) + fish_nB[counter]))
 
@@ -140,7 +141,7 @@ extinction <- data.frame(rate = c(fish_extinction_rate, invert_extinction_rate),
                          type = rep(c('fish', 'invert'), each = 10),
                          weight = akaike_weight)
 interval_order$midpoint <- rowMeans(subset(interval_order, select = c(min_ma, max_ma)))
-
+  
 ggplot(extinction) +
   geom_vline(xintercept = 93.9) +
   geom_rect(data = interval_order, aes(xmin = max_ma, xmax = min_ma, ymin = -0.2, ymax = -0.1),
@@ -154,3 +155,17 @@ ggplot(extinction) +
   theme_classic() +
   theme(axis.text = element_text(size=16),
         axis.title = element_text(size=17))
+
+fish_count <- count(fish_data_age, interval_no, max_stage)
+invert_count <- count(invert_data_age, interval_no, max_stage)
+count <- rbind(fish_count, invert_count)
+count["type"] <- rep(c("Fish", "Invert"), each = 12)
+
+ggplot(count, aes(x = interval_no, y = n)) +
+  scale_x_reverse(breaks=seq(123, 112), labels=rev(interval_order$interval_name)) + 
+  ylab("Occurrences") +
+  xlab("Time intervals") +
+  geom_bar(stat="identity") +
+  facet_wrap("type", scales="free") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
